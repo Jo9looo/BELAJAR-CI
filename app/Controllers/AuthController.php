@@ -17,13 +17,24 @@ public function login()
         $username = $this->request->getVar('username');
         $password = $this->request->getVar('password');
 
-        $dataUser = ['username' => 'april', 'password' => '202cb962ac59075b964b07152d234b70', 'role' => 'admin']; // passw 123
+        $dataUser = [
+            'username' => 'april', 
+            'password' => '202cb962ac59075b964b07152d234b70', 
+            'role' => 'admin',
+            'email' => 'april@Gmail.com' 
+        ]; // passw 123
 
         if ($username == $dataUser['username']) {
             if (md5($password) == $dataUser['password']) {
+                // ni buat ngatur waktu
+                date_default_timezone_set('Asia/Jakarta');
+
                 session()->set([
                     'username' => $dataUser['username'],
                     'role' => $dataUser['role'],
+                    'email' => $dataUser['email'],
+                    'waktu_login' => date('Y-m-d H:i:s'), 
+                    'status_login' => 'Sudah Login', 
                     'isLoggedIn' => TRUE
                 ]);
 
@@ -43,7 +54,10 @@ public function login()
 
 public function logout()
 {
+    // Hapus semua data session secara spesifik lalu hancurkan
+    session()->remove(['username', 'role', 'email', 'waktu_login', 'status_login', 'isLoggedIn']);
     session()->destroy();
+    
     return redirect()->to('login');
 }
 }
