@@ -5,17 +5,24 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 use CodeIgniter\HTTP\ResponseInterface;
 
+use App\Models\UserModel;
+
 class AuthController extends BaseController
 {
+    protected $UserModel;
+
     function __construct()
-    {
+    {   
         helper('form');
+        $this->userModel = new UserModel();
     }
 public function login()
 {
     if ($this->request->getPost()) {
         $username = $this->request->getVar('username');
         $password = $this->request->getVar('password');
+
+        $dataUser = $this->userModel ->where(['username' => $username])->first();
 
         $dataUser = [
             'username' => 'april', 
