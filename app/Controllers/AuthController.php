@@ -19,20 +19,21 @@ class AuthController extends BaseController
 public function login()
 {
     if ($this->request->getPost()) {
+        $rules = [
+            'username' => 'required|min_length[6]',
+            'password' => 'required|min_length[7]|numeric',
+        ];
+
+
+    if ($this->validate($rules)) {
         $username = $this->request->getVar('username');
         $password = $this->request->getVar('password');
 
-        $dataUser = $this->userModel ->where(['username' => $username])->first();
+        $dataUser = $this->userModel->where(['username' => $username])->first();
 
-        $dataUser = [
-            'username' => 'april', 
-            'password' => '202cb962ac59075b964b07152d234b70', 
-            'role' => 'admin',
-            'email' => 'april@Gmail.com' 
-        ]; // passw 123
+        if ($dataUser) {
 
-        if ($username == $dataUser['username']) {
-            if (md5($password) == $dataUser['password']) {
+            if (password_verify($password, $dataUser['password'])) {
                 // ni buat ngatur waktu
                 date_default_timezone_set('Asia/Jakarta');
 
@@ -40,7 +41,7 @@ public function login()
                     'username' => $dataUser['username'],
                     'role' => $dataUser['role'],
                     'email' => $dataUser['email'],
-                    'waktu_login' => date('Y-m-d H:i:s'), 
+                    'waktu_login' => date('Y-m-d H:i:s'),   
                     'status_login' => 'Sudah Login', 
                     'isLoggedIn' => TRUE
                 ]);
@@ -54,6 +55,12 @@ public function login()
             session()->setFlashdata('failed', 'Username Tidak Ditemukan');
             return redirect()->back();
         }
+
+        } else {
+        session()->setFlashdata('failed', $this->validator->listErrors());
+        return redirect()->back();
+        }
+
     } else {
         return view('v_login');
     }
