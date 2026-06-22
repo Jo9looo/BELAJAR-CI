@@ -2,6 +2,31 @@
 <?= $this->section('content') ?>
 <?= $this->extend('layout') ?>
 <?= $this->section('content') ?> 
+
+<?php
+if (session()->getFlashData('success')) {
+?>
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <?= session()->getFlashData('success') ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<?php
+}
+?>
+<?php
+if (session()->getFlashData('failed')) {
+?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <?= session()->getFlashData('failed') ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<?php
+}
+?>
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+    Tambah Data
+</button>
+
 <!-- Table with stripped rows -->
 <table class="table datatable">
     <thead>
@@ -27,12 +52,20 @@
                     <?php endif; ?>
                 </td>
                 <td>
-                    aksi
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#editModal-<?= $produk['id'] ?>">
+                    Ubah
+                </button>
+                <a href="<?= base_url('produk/delete/' . $produk['id']) ?>" class="btn btn-danger" onclick="return confirm('Yakin hapus data ini ?')">
+                    Hapus
+                </a>
                 </td>
             </tr>
         <?php endforeach ?>
     </tbody>
 </table>
 <!-- End Table with stripped rows --> 
+
+<?= $this->include('produk/modal_add')?>
+<?= $this->include('produk/modal_edit') ?>
 <?= $this->endSection() ?>
 <?= $this->endSection() ?>
