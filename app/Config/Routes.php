@@ -22,3 +22,6 @@ $routes->group('produk', ['filter' => 'auth'], function ($routes) {
 $routes->post('produk', 'ProdukController::create', ['filter' => 'auth']);
 $routes->post('produk/edit/(:any)', 'ProdukController::edit/$1', ['filter' => 'auth']);
 $routes->get('produk/delete/(:any)', 'ProdukController::delete/$1', ['filter' => 'auth']);
+
+$routes->get('profile', 'ProfilController::index', ['filter' => 'auth']);
+$routes->get('keranjang', 'TransaksiController::index', ['filter' => 'auth']);
