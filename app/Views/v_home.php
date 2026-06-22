@@ -13,7 +13,7 @@
                 </div>
             </div> 
     <?php endforeach ?> 
-</div>
+</div>  
 <!-- End Table with stripped rows -->
 <?= $this->endSection() ?>
 
