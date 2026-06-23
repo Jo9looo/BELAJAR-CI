@@ -1,0 +1,4 @@
+### index
+GET http://localhost:8080/api/products
+Accept: application/json
+Authorization: Bearer my-secret-token
