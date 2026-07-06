@@ -2,7 +2,7 @@
   <header id="header" class="header fixed-top d-flex align-items-center">
 
     <div class="d-flex align-items-center justify-content-between">
-      <a href="index.html" class="logo d-flex align-items-center">
+      <a href="<?= base_url() ?>" class="logo d-flex align-items-center">
         <img src="<?= base_url()?>NiceAdmin/assets/img/logo.png" alt="">
         <span class="d-none d-lg-block">Toko</span>
       </a>
@@ -183,7 +183,7 @@
             </li>
 
             <li>
-              <a class="dropdown-item d-flex align-items-center" href="users-profile.html">
+              <a class="dropdown-item d-flex align-items-center" href="<?= base_url('profile') ?>">
                 <i class="bi bi-person"></i>
                 <span>My Profile</span>
               </a>
@@ -193,7 +193,7 @@
             </li>
 
             <li>
-              <a class="dropdown-item d-flex align-items-center" href="users-profile.html">
+              <a class="dropdown-item d-flex align-items-center" href="<?= base_url('profile') ?>">
                 <i class="bi bi-gear"></i>
                 <span>Account Settings</span>
               </a>
@@ -203,7 +203,7 @@
             </li>
 
             <li>
-              <a class="dropdown-item d-flex align-items-center" href="pages-faq.html">
+              <a class="dropdown-item d-flex align-items-center" href="#">
                 <i class="bi bi-question-circle"></i>
                 <span>Need Help?</span>
               </a>
@@ -213,7 +213,7 @@
             </li>
 
             <li>
-              <a class="dropdown-item d-flex align-items-center" href="logout">
+              <a class="dropdown-item d-flex align-items-center" href="<?= base_url('logout') ?>">
                 <i class="bi bi-box-arrow-right"></i>
                 <span>Sign Out</span>
               </a>

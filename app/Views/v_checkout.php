@@ -47,6 +47,15 @@
         'readonly' => true]) ?>
 </div>
 <div class="col-12">
+    <?= form_label('Kode Voucher', 'voucher_code', ['class' => 'form-label']) ?>
+    <?= form_input([
+        'name'        => 'voucher_code',
+        'id'          => 'voucher_code',
+        'class'       => 'form-control',
+        'placeholder' => 'Masukkan kode voucher']) ?>
+    <small class="text-muted">Tersedia: FLASH10, FLASH15, MEMBER20</small>
+</div>
+<div class="col-12">
     <?= form_submit(
         'submit',
         'Buat Pesanan',
@@ -83,12 +92,41 @@
       <tr>
           <td colspan="2"></td>
           <td>Subtotal</td>
-          <td><?= number_to_currency($total, 'IDR') ?></td>
+          <td>IDR <?= number_format($total, 0, ',', '.') ?></td>
+      </tr>
+      <tr class="text-danger" id="row_voucher" style="display: none;">
+          <td colspan="2"></td>
+          <td>
+              Diskon Voucher<br>
+              <small id="voucher_percentage" class="text-danger">(0%)</small>
+          </td>
+          <td>-IDR <span id="voucher_discount">0</span></td>
       </tr>
       <tr>
           <td colspan="2"></td>
-          <td>Total</td>
-          <td><span id="total"><?= number_to_currency($total, 'IDR') ?></span></td>
+          <td>PPN (11%)</td>
+          <td>IDR <span id="ppn_amount">0</span></td>
+      </tr>
+      <tr>
+          <td colspan="2"></td>
+          <td>Biaya Admin</td>
+          <td>IDR <span id="admin_amount">0</span></td>
+      </tr>
+      <tr class="fw-bold">
+          <td colspan="2"></td>
+          <td>
+              Subtotal<br>
+              <small class="text-success">(+PPN+Admin-Voucher)</small>
+          </td>
+          <td>IDR <span id="subtotal_calc">0</span></td>
+      </tr>
+      <tr class="fw-bold">
+          <td colspan="2"></td>
+          <td>
+              Grand Total<br>
+              <small class="text-muted">(incl. Ongkir)</small>
+          </td>
+          <td><span id="total">IDR 0</span></td>
       </tr>
   </tbody>
 </table>
@@ -102,13 +140,54 @@ $(document).ready(function() {
 let subtotal = <?= $total ?>;
 hitungTotal();
 
+function formatCurrency(val) {
+    return val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
 function hitungTotal() {
-    let total = subtotal + ongkir;
+    let voucherCode = $("#voucher_code").val().trim().toUpperCase();
+    let discountPercent = 0;
+    if (voucherCode === "FLASH10") {
+        discountPercent = 10;
+    } else if (voucherCode === "FLASH15") {
+        discountPercent = 15;
+    } else if (voucherCode === "MEMBER20") {
+        discountPercent = 20;
+    }
+
+    let discountAmount = subtotal * (discountPercent / 100);
+    let ppnAmount = subtotal * 0.11;
+
+    let adminPercent = 0.006;
+    if (subtotal > 20000000 && subtotal <= 40000000) {
+        adminPercent = 0.008;
+    } else if (subtotal > 40000000) {
+        adminPercent = 0.010;
+    }
+    let adminAmount = subtotal * adminPercent;
+
+    let subtotalCalc = subtotal + ppnAmount + adminAmount - discountAmount;
+    let total = subtotalCalc + ongkir;
+
+    if (discountPercent > 0) {
+        $("#voucher_percentage").text(`(${discountPercent}%)`);
+        $("#voucher_discount").text(formatCurrency(discountAmount));
+        $("#row_voucher").show();
+    } else {
+        $("#row_voucher").hide();
+    }
 
     $("#ongkir").val(ongkir);
-    $("#total").text(`IDR ${total.toLocaleString('id-ID')}`);
+    $("#ppn_amount").text(formatCurrency(ppnAmount));
+    $("#admin_amount").text(formatCurrency(adminAmount));
+    $("#subtotal_calc").text(formatCurrency(subtotalCalc));
+    $("#total").text(`IDR ${formatCurrency(total)}`);
     $("#total_harga").val(total);
 }
+
+$("#voucher_code").on('input', function() {
+    hitungTotal();
+});
 
 
     $('#kelurahan').select2({
@@ -133,7 +212,6 @@ function hitungTotal() {
     });
 $("#kelurahan").on('change', function () {
     let id_kelurahan = $(this).val();
-    // Reset layanan, ongkir, dan status dropdown
     $("#layanan").html('<option value="">Memuat layanan...</option>').prop('disabled', true);
     ongkir = 0;
     hitungTotal(); 
@@ -161,7 +239,6 @@ $("#kelurahan").on('change', function () {
         });
     }
 });
-// 2. Deteksi saat Layanan dipilih untuk meng-update Ongkir & Total Harga
 $("#layanan").on('change', function() {
     ongkir = parseFloat($(this).val()) || 0;
     hitungTotal();

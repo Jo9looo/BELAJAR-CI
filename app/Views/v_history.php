@@ -36,6 +36,9 @@ History Transaksi Pembelian <strong><?= $username ?></strong>
                             <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal-<?= $item['id'] ?>">
                                 Detail
                             </button>
+                            <a href="<?= base_url('transaksi/invoice/' . $item['id']) ?>" class="btn btn-primary btn-sm">
+                                <i class="bi bi-receipt"></i> Nota
+                            </a>
                         </td>
                     </tr> 
             <?php

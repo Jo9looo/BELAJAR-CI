@@ -18,7 +18,7 @@ class TransaksiController extends BaseController
 
 public function __construct()
 {
-    helper(['number', 'form']);
+    helper(['number', 'form', 'transaksi']);
     $this->cart = service('cart');
     $this->transactionModel = new TransactionModel();
     $this->transactionDetailModel = new TransactionDetailModel(); 
@@ -125,7 +125,6 @@ public function destinations()
         return $this->response->setJSON(['results' => []]);
     }
 
-    // Panggil Service RajaOngkir
     $service = new RajaOngkirService();
     $response = $service->getDestination($search);
 
@@ -133,8 +132,8 @@ public function destinations()
     if (isset($response['data']) && is_array($response['data'])) {
         foreach ($response['data'] as $item) {
             $results[] = [
-                'id'   => $item['id'], // ID destinasi kelurahan
-                'text' => $item['label'] ?? ($item['subdistrict_name'] . ', ' . $item['city_name'] . ', ' . $item['province_name']) // Teks pencarian
+                'id'   => $item['id'],
+                'text' => $item['label'] ?? ($item['subdistrict_name'] . ', ' . $item['city_name'] . ', ' . $item['province_name'])
             ];
         }
     }
@@ -188,16 +187,24 @@ public function buy()
     }
 
     $ongkir = (int) $this->request->getPost('ongkir');
+    $voucherCode = $this->request->getPost('voucher_code');
+
+    $diskonVoucher = hitung_diskon_voucher($subtotal, $voucherCode);
+    $ppn = hitung_ppn($subtotal);
+    $biayaAdmin = hitung_biaya_admin($subtotal);
 
     $transaction = [
-        'username'    => $this->request->getPost('username'),
-        'alamat'      => $this->request->getPost('alamat'),
-        'ongkir'      => $ongkir,
-        'total_harga' => $subtotal + $ongkir,
-        'status'      => 0, 
+        'username'       => $this->request->getPost('username'),
+        'alamat'         => $this->request->getPost('alamat'),
+        'ongkir'         => $ongkir,
+        'ppn'            => $ppn,
+        'biaya_admin'    => $biayaAdmin,
+        'voucher_code'   => $voucherCode ?: null,
+        'diskon_voucher' => $diskonVoucher,
+        'total_harga'    => $subtotal + $ppn + $biayaAdmin - $diskonVoucher + $ongkir,
+        'status'         => 0, 
     ];
 
-    // insert transaction
     if (!$this->transactionModel->insert($transaction)) {
         $db->transRollback();
         return redirect()->back()->with('error', 'Gagal membuat transaksi');
@@ -205,7 +212,6 @@ public function buy()
 
     $transactionId = $this->transactionModel->getInsertID();
 
-    // insert transaction detail
     foreach ($cartItems as $item) {
         $this->transactionDetailModel->insert([
             'transaction_id' => $transactionId,
@@ -222,9 +228,48 @@ public function buy()
         return redirect()->back()->with('error', 'Gagal membuat transaksi');
     }
 
-		//hapus session keranjang belanja 
     $this->cart->destroy();
-    return redirect()->to(base_url());
+    return redirect()->to(base_url('transaksi/invoice/' . $transactionId));
+}
+
+public function invoice($id)
+{
+    $username = session()->get('username');
+    $transaction = $this->transactionModel->find($id);
+
+    if (!$transaction || $transaction['username'] !== $username) {
+        return redirect()->to(base_url('history'))->with('error', 'Transaksi tidak ditemukan.');
+    }
+
+    $products = $this->transactionDetailModel->getProductsByTransactionIds([$id]);
+
+    $data = [
+        'username'    => $username,
+        'transaction' => $transaction,
+        'products'    => $products[$id] ?? [],
+    ];
+
+    return view('v_invoice', $data);
+}
+
+public function printInvoice($id)
+{
+    $username = session()->get('username');
+    $transaction = $this->transactionModel->find($id);
+
+    if (!$transaction || $transaction['username'] !== $username) {
+        return redirect()->to(base_url('history'))->with('error', 'Transaksi tidak ditemukan.');
+    }
+
+    $products = $this->transactionDetailModel->getProductsByTransactionIds([$id]);
+
+    $data = [
+        'username'    => $username,
+        'transaction' => $transaction,
+        'products'    => $products[$id] ?? [],
+    ];
+
+    return view('v_invoice_print', $data);
 }
 
 public function history()

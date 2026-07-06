@@ -1,0 +1,115 @@
+================================================================================
+BAHAN PRESENTASI: IMPLEMENTASI PPN, BIAYA ADMIN, DAN VOUCHER DISKON PADA CHECKOUT
+================================================================================
+
+Tujuan dari tugas ini adalah menambahkan komponen perhitungan baru pada saat checkout 
+belanja guna mematuhi regulasi perpajakan (PPN 11%), menutup biaya operasional 
+(biaya admin berjenjang), dan memberikan promo loyalitas pelanggan (voucher diskon).
+
+Implementasi dibagi menjadi 5 bagian utama:
+
+--------------------------------------------------------------------------------
+1. MIGRASI DATABASE (app/Database/Migrations/2026-07-04-151233_AddFieldsToTransaction.php)
+--------------------------------------------------------------------------------
+Untuk menyimpan komponen biaya baru secara permanen di database, kita membuat 
+file migrasi baru untuk memodifikasi tabel 'transaction':
+
+* Kolom Baru yang Ditambahkan:
+  - ppn (DOUBLE NULL)             : Menyimpan nilai PPN 11%.
+  - biaya_admin (DOUBLE NULL)     : Menyimpan nominal biaya admin berjenjang.
+  - voucher_code (VARCHAR(20) NULL): Menyimpan kode voucher yang digunakan.
+  - diskon_voucher (DOUBLE NULL)  : Menyimpan nominal potongan harga dari voucher.
+
+* Metode up() (Baris 9-31):
+  Menggunakan $this->forge->addColumn('transaction', $fields) untuk menyisipkan 
+  kolom-kolom di atas ke tabel yang sudah ada.
+
+* Metode down() (Baris 33-36):
+  Menggunakan $this->forge->dropColumn() untuk mengembalikan perubahan jika 
+  migrasi di-rollback.
+
+--------------------------------------------------------------------------------
+2. MODEL DATABASE (app/Models/TransactionModel.php)
+--------------------------------------------------------------------------------
+Agar CodeIgniter 4 mengizinkan penyimpanan data secara massal (mass-assignment) 
+pada kolom baru tersebut:
+
+* Kita menambahkan kolom-kolom baru ('ppn', 'biaya_admin', 'voucher_code', 
+  'diskon_voucher') ke dalam array $allowedFields (Baris 15). 
+* Tanpa langkah ini, CodeIgniter akan menyaring (mengabaikan) kolom baru tersebut 
+  saat kita menjalankan query insert() dari controller.
+
+--------------------------------------------------------------------------------
+3. FUNGSI HELPER BISNIS (app/Helpers/transaksi_helper.php)
+--------------------------------------------------------------------------------
+Kita memisahkan seluruh logika matematika perhitungan ke dalam file pembantu 
+(helper) agar kode lebih bersih, modular, dan dapat digunakan kembali:
+
+* hitung_ppn($total_harga) (Baris 3-14):
+  - Rumus: total harga pembelian * 11% (tidak termasuk ongkir).
+
+* hitung_biaya_admin($total_harga) (Sistem Berjenjang) (Baris 16-36):
+  - Jika total harga <= Rp 20.000.000          -> tarif 0.6%
+  - Jika total harga Rp 20.000.001 - 40.000.000 -> tarif 0.8%
+  - Jika total harga > Rp 40.000.000           -> tarif 1.0%
+
+* hitung_diskon_voucher($total_harga, $voucher_code) (Baris 38-64):
+  - Kode voucher dikonversi ke huruf besar (strtoupper) dan dibersihkan dari 
+    spasi kosong (trim) untuk mencegah kesalahan ketik pengguna.
+  - FLASH10  -> Potongan 10%
+  - FLASH15  -> Potongan 15%
+  - MEMBER20 -> Potongan 20%
+  - Jika kode tidak terdaftar -> potongan 0
+
+--------------------------------------------------------------------------------
+4. LOGIKA CONTROLLER BACKEND (app/Controllers/TransaksiController.php)
+--------------------------------------------------------------------------------
+Backend bertindak sebagai gatekeeper utama untuk menjamin integritas data (agar 
+pengguna tidak bisa memanipulasi total harga melalui inspeksi elemen browser):
+
+* Constructor (Baris 19-25):
+  Memuat helper 'transaksi' secara global di controller melalui 
+  helper(['number', 'form', 'transaksi']) pada Baris 21.
+
+* Metode buy() (Baris 174-237):
+  1. Menangkap data 'voucher_code' yang diinputkan pengguna.
+  2. Menghitung subtotal belanja murni dari isi keranjang ($cartItems).
+  3. Memanggil helper fungsi untuk menghitung ppn, biayaAdmin, dan diskonVoucher.
+  4. Menghitung total harga final di server:
+     Total Harga = Subtotal + PPN + Biaya Admin - Diskon Voucher + Ongkir
+  5. Memasukkan seluruh data kalkulasi ke dalam array $transaction dan 
+     menyimpannya ke tabel 'transaction' di database.
+
+--------------------------------------------------------------------------------
+5. TAMPILAN ANTARMUKA CHECKOUT FRONTEND (app/Views/v_checkout.php)
+--------------------------------------------------------------------------------
+Pembaruan dilakukan untuk memberikan pengalaman pengguna (UX) yang interaktif:
+
+* Penambahan Input Form (Baris 49-57):
+  Menambahkan input teks 'voucher_code' tepat di bawah field Ongkos Kirim dengan 
+  petunjuk kode voucher yang tersedia (FLASH10, FLASH15, MEMBER20).
+
+* Tabel Ringkasan Pesanan Baru (Baris 97-130):
+  Menampilkan rincian terpisah untuk potongan diskon voucher (berwarna merah), 
+  PPN, biaya admin, subtotal setelah perhitungan tambahan, dan total akhir.
+
+* Logika JavaScript (hitungTotal) (Baris 147-186):
+  - Menangkap setiap ketikan pengguna di field voucher secara langsung menggunakan 
+    event listener on('input') pada Baris 188-190.
+  - Menghitung nilai diskon, PPN, dan biaya admin berjenjang di sisi klien 
+    menggunakan logika JavaScript yang sejalan dengan helper backend.
+  - Memperbarui angka ringkasan secara instan, memberikan efek dinamis saat 
+    kode voucher valid dimasukkan atau saat ongkir berubah.
+
+================================================================================
+ALUR KERJA DEMO TRANSAKSI:
+================================================================================
+1. User memasukkan item ke keranjang -> Pergi ke halaman Checkout.
+2. User memilih Kelurahan & Kurir -> Ongkir muncul, JS meng-update Grand Total.
+3. User mengetik "MEMBER20" -> JS langsung memotong subtotal sebesar 20%, 
+   menampilkan baris diskon voucher, dan meng-update total pembayaran secara 
+   real-time.
+4. User mengklik "Buat Pesanan" -> Form dikirim ke server -> Controller memvalidasi 
+   ulang kode voucher, PPN, admin, dan ongkir -> Data final tersimpan dengan aman 
+   di database.
+================================================================================

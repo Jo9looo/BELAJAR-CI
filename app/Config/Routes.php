@@ -33,6 +33,8 @@ $routes->group('keranjang', ['filter' => 'auth'], function ($routes) {
 $routes->get('checkout', 'TransaksiController::checkout', ['filter' => 'auth']);
 $routes->post('buy', 'TransaksiController::buy', ['filter' => 'auth']);
 $routes->get('history', 'TransaksiController::history', ['filter' => 'auth']);
+$routes->get('transaksi/invoice/(:num)', 'TransaksiController::invoice/$1', ['filter' => 'auth']);
+$routes->get('transaksi/invoice/print/(:num)', 'TransaksiController::printInvoice/$1', ['filter' => 'auth']);
 
 
 $routes->post('produk', 'ProdukController::create', ['filter' => 'auth']);

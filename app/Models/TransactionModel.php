@@ -6,13 +6,13 @@ use CodeIgniter\Model;
 
 class TransactionModel extends Model
 {
-    protected $table            = 'transaction'; //disesuaikan
+    protected $table            = 'transaction';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
-    protected $useSoftDeletes   = true; //disesuaikan
+    protected $useSoftDeletes   = true;
     protected $protectFields    = true;
-    protected $allowedFields    = ['username', 'total_harga', 'alamat', 'ongkir', 'status']; //disesuaikan
+    protected $allowedFields    = ['username', 'total_harga', 'alamat', 'ongkir', 'status', 'ppn', 'biaya_admin', 'voucher_code', 'diskon_voucher'];
 
     protected bool $allowEmptyInserts = false;
     protected bool $updateOnlyChanged = true;
@@ -21,7 +21,7 @@ class TransactionModel extends Model
     protected array $castHandlers = [];
 
     // Dates
-    protected $useTimestamps = true; //disesuaikan
+    protected $useTimestamps = true;
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
@@ -30,7 +30,7 @@ class TransactionModel extends Model
     // Validation
     protected $validationRules      = [];
     protected $validationMessages   = [];
-    protected $skipValidation       = true; //disesuaikan
+    protected $skipValidation       = true;
     protected $cleanValidationRules = true;
 
     // Callbacks
